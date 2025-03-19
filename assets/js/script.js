@@ -66,3 +66,32 @@ document.getElementById('cadastroForm').addEventListener('submit', function(even
           .catch(error => console.error('Erro ao salvar os dados:', error));
     });
 });
+
+document.getElementById('enviarParaDrive').addEventListener('click', function() {
+    const nome = document.getElementById('nome').value;
+    const email = document.getElementById('email').value;
+    const cep = document.getElementById('cep').value;
+    const cidade = document.getElementById('cidade').value;
+
+    const fileContent = `Nome: ${nome}\nEmail: ${email}\nCEP: ${cep}\nCidade: ${cidade}`;
+    const blob = new Blob([fileContent], { type: 'text/plain' });
+
+    gapi.auth2.getAuthInstance().signIn().then(() => {
+        const accessToken = gapi.auth2.getAuthInstance().currentUser.get().getAuthResponse().access_token;
+        const form = new FormData();
+        form.append('metadata', new Blob([JSON.stringify({
+            'name': 'cadastro.txt',
+            'mimeType': 'text/plain',
+            'parents': [FOLDER_ID]
+        })], { type: 'application/json' }));
+        form.append('file', blob);
+
+        fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + accessToken },
+            body: form
+        }).then(response => response.json())
+          .then(data => alert('Dados salvos com sucesso!'))
+          .catch(error => console.error('Erro ao salvar os dados:', error));
+    });
+});
